@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="menus">
+        <item>Manage Users</item>
+        <item>User Profile</item>
+        <item>Recipe Editor</item>
+        <item>Weekly Meal Plan Editor</item>
+        <item>Shopping List Viewer</item>
+    </string-array>
+    <string-array name="add_recipe_types">
+        <item>Breakfast</item>
+        <item>Lunch</item>
+        <item>Dinner</item>
+    </string-array>
+</resources>
