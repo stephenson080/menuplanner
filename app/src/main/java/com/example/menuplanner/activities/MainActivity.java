@@ -7,9 +7,13 @@ import android.os.Bundle;
 
 import com.example.menuplanner.R;
 import com.example.menuplanner.activities.auth.LoginActivity;
+import com.example.menuplanner.activities.meal_plan.MealPlanIndexActivity;
+import com.example.menuplanner.activities.meal_plan.ShoppingListActivity;
 import com.example.menuplanner.activities.recipe.RecipeActivity;
 import com.example.menuplanner.activities.user.ManageUsersActivity;
 import com.example.menuplanner.activities.user.ProfileActivity;
+import com.example.menuplanner.entities.MealPlan;
+import com.example.menuplanner.utils.Db;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -21,8 +25,10 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "HOME";
@@ -33,6 +39,8 @@ public class MainActivity extends AppCompatActivity {
     private final String[] breakfasts = {"Waffles", "Pancakes", "Yogurt"};
     private final String[] lunches = {"Pasta", "PBJ Sandwich", "Cheese Sandwich"};
     private final String[] dinners = {"Stir Fry", "Lasagna", "Fish"};
+
+    private ArrayList<MealPlan> mealPlans;
 
     private int counter = 0;
 
@@ -94,11 +102,24 @@ public class MainActivity extends AppCompatActivity {
                     Intent recipeManageIntent = new Intent(MainActivity.this, RecipeActivity.class);
                     MainActivity.this.startActivity(recipeManageIntent);
                 }
+                else if (selectedPage.equalsIgnoreCase("Weekly Meal Plan Editor")){
+                    Intent mealPlanIndex = new Intent(MainActivity.this, MealPlanIndexActivity.class);
+                    MainActivity.this.startActivity(mealPlanIndex);
+                }
+                else if (selectedPage.equalsIgnoreCase("Shopping List Viewer")){
+                    Intent shoppingListActivity = new Intent(MainActivity.this, ShoppingListActivity.class);
+                    MainActivity.this.startActivity(shoppingListActivity);
+                }
             }
         });
     }
 
     protected void manageDailyMenu(){
+        Db db = new Db(getApplicationContext());
+
+        ArrayList<LocalDate> days = this.getDatesOfTheWeek();
+        ArrayList<MealPlan> mealPlans = db.getAllMealPlansForPeriod(days);
+        this.mealPlans = mealPlans;
         DateTimeFormatter dtf = null;
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
             dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd");
@@ -115,12 +136,33 @@ public class MainActivity extends AppCompatActivity {
         TextView menuDay = findViewById(R.id.menu_date);
         menuDay.setText(dateToDisplay);
 
-        TextView breakfastItem = findViewById(R.id.breakfast_item);
-        breakfastItem.setText(breakfasts[counter]);
         TextView lunchItem = findViewById(R.id.lunch_item);
-        lunchItem.setText(lunches[counter]);
         TextView dinnerItem = findViewById(R.id.dinner_item);
-        dinnerItem.setText(dinners[counter]);
+
+        TextView breakfastItem = findViewById(R.id.breakfast_item);
+        for (MealPlan mealPlan : mealPlans) {
+            if (mealPlan.getDate().equals(currentDate)) {
+                if (mealPlan.getMealType().equalsIgnoreCase("Breakfast")){
+                    breakfastItem.setText(mealPlan.getRecipe().getTitle());
+                }else if (mealPlan.getMealType().equalsIgnoreCase("Lunch")){
+                    lunchItem.setText(mealPlan.getRecipe().getTitle());
+                }else {
+                    dinnerItem.setText(mealPlan.getRecipe().getTitle());
+                }
+
+            }
+            else {
+                breakfastItem.setText("Not set");
+                lunchItem.setText("Not set");
+                dinnerItem.setText("Not set");
+            }
+        }
+//        MealPlan breakFastMeal = mealPlans.
+//        breakfastItem.setText(breakfasts[counter]);
+//        TextView lunchItem = findViewById(R.id.lunch_item);
+//        lunchItem.setText(lunches[counter]);
+//        TextView dinnerItem = findViewById(R.id.dinner_item);
+//        dinnerItem.setText(dinners[counter]);
 
         Button previousDay = findViewById(R.id.menu_previous_day);
         DateTimeFormatter finalDtf = dtf;
@@ -143,11 +185,28 @@ public class MainActivity extends AppCompatActivity {
                     counter = breakfasts.length-1;
 
                 TextView breakfastItem = findViewById(R.id.breakfast_item);
-                breakfastItem.setText(breakfasts[counter]);
+
                 TextView lunchItem = findViewById(R.id.lunch_item);
-                lunchItem.setText(lunches[counter]);
+
                 TextView dinnerItem = findViewById(R.id.dinner_item);
-                dinnerItem.setText(dinners[counter]);
+
+                for (MealPlan mealPlan : mealPlans) {
+                    if (mealPlan.getDate().equals(currentDate)) {
+                        if (mealPlan.getMealType().equalsIgnoreCase("Breakfast")){
+                            breakfastItem.setText(mealPlan.getRecipe().getTitle());
+                        }else if (mealPlan.getMealType().equalsIgnoreCase("Lunch")){
+                            lunchItem.setText(mealPlan.getRecipe().getTitle());
+                        }else {
+                            dinnerItem.setText(mealPlan.getRecipe().getTitle());
+                        }
+
+                    }
+                    else {
+                        breakfastItem.setText("Not set");
+                        lunchItem.setText("Not set");
+                        dinnerItem.setText("Not set");
+                    }
+                }
             }
         });
 
@@ -173,14 +232,58 @@ public class MainActivity extends AppCompatActivity {
                     counter = 0;
 
                 TextView breakfastItem = findViewById(R.id.breakfast_item);
-                breakfastItem.setText(breakfasts[counter]);
+
                 TextView lunchItem = findViewById(R.id.lunch_item);
-                lunchItem.setText(lunches[counter]);
+
                 TextView dinnerItem = findViewById(R.id.dinner_item);
-                dinnerItem.setText(dinners[counter]);
+
+                for (MealPlan mealPlan : mealPlans) {
+                    if (mealPlan.getDate().equals(currentDate)) {
+                        if (mealPlan.getMealType().equalsIgnoreCase("Breakfast")){
+                            breakfastItem.setText(mealPlan.getRecipe().getTitle());
+                            break;
+                        }else if (mealPlan.getMealType().equalsIgnoreCase("Lunch")){
+                            lunchItem.setText(mealPlan.getRecipe().getTitle());
+                            break;
+                        }else {
+                            dinnerItem.setText(mealPlan.getRecipe().getTitle());
+                            break;
+                        }
+
+                    }
+                    else {
+                        breakfastItem.setText("Not set");
+                        lunchItem.setText("Not set");
+                        dinnerItem.setText("Not set");
+                    }
+                }
             }
         });
     }
 
+    public ArrayList<LocalDate> getDatesOfTheWeek() {
+        LocalDate today = null;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            today = LocalDate.now();
+        }
+        LocalDate startOfWeek = null; // Get the start of the week (Monday)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startOfWeek = today.with(DayOfWeek.MONDAY);
+        }
+        LocalDate endOfWeek = null; // Get the end of the week (Sunday)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            endOfWeek = startOfWeek.plusDays(6);
+        }
+
+        ArrayList<LocalDate> datesOfWeek = new ArrayList<>();
+        LocalDate dateIterator = startOfWeek;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            while (!dateIterator.isAfter(endOfWeek)) {
+                datesOfWeek.add(dateIterator);
+                dateIterator = dateIterator.plusDays(1);
+            }
+        }
+        return datesOfWeek;
+    }
 
 }

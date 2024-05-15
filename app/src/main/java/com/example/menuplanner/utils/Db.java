@@ -6,14 +6,17 @@ import android.database.Cursor;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.os.Build;
 import android.util.Log;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 
+import com.example.menuplanner.entities.MealPlan;
 import com.example.menuplanner.entities.Recipe;
 import com.example.menuplanner.entities.User;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -43,7 +46,8 @@ public class Db extends SQLiteOpenHelper {
             "type TEXT" +
             ")";
 
-
+    private static final String CREATE_TABLE_MEAL_PLAN = "CREATE TABLE meal_plan (id INTEGER PRIMARY KEY AUTOINCREMENT, is_private TEXT, recipeId INTEGER, date TEXT, meal_type TEXT)";
+    private static final String DROP_TABLE_MEAL_PLAN = "DROP TABLE IF EXISTS meal_plan";
     private static final String DROP_TABLE_RECIPE = "DROP TABLE IF EXISTS recipe";
     private static final String DROP_TABLE_INGREDIENT = "DROP TABLE IF EXISTS ingredient";
 
@@ -52,7 +56,6 @@ public class Db extends SQLiteOpenHelper {
 
     private static final String CREATE_TABLE_USER_ROLES = "CREATE TABLE user_roles (username TEXT NOT NULL, role TEXT NOT NULL)";
     private static final String DROP_TABLE_USER_ROLES = "DROP TABLE IF EXISTS user_roles";
-
     private static final String CREATE_TABLE_ACCESS = "CREATE TABLE access (username TEXT NOT NULL, password TEXT NOT NULL)";
     private static final String DROP_TABLE_ACCESS = "DROP TABLE IF EXISTS access";
 
@@ -71,11 +74,6 @@ public class Db extends SQLiteOpenHelper {
 
     @Override
     public void onCreate(SQLiteDatabase db) {
-        /*
-        I am not enforcing any relationships, but it is important that the order of creation
-        respects the relationships between tables. Alternatively, we can first add all the tables
-        and the modify them by adding constraints.
-         */
         Log.i(TAG, "CreatingTables");
         ArrayList<String> createDefaulttables = new ArrayList<>();
         createDefaulttables.add(CREATE_TABLE_ROLES);
@@ -84,6 +82,7 @@ public class Db extends SQLiteOpenHelper {
         createDefaulttables.add(CREATE_TABLE_USER_ROLES);
 
         createDefaulttables.add(CREATE_TABLE_RECIPE);
+        createDefaulttables.add(CREATE_TABLE_MEAL_PLAN);
 
         // Creating the database
         Log.i(TAG, "onCreate: Creating the database");
@@ -122,6 +121,7 @@ public class Db extends SQLiteOpenHelper {
 
         dropStatements.add(DROP_TABLE_RECIPE);
         dropStatements.add(DROP_TABLE_INGREDIENT);
+        dropStatements.add(DROP_TABLE_MEAL_PLAN);
 
         Log.i(TAG, "onUpgrade: going from version " + oldVersion + " to version " + newVersion);
         // Dropping all tables
@@ -416,11 +416,49 @@ public class Db extends SQLiteOpenHelper {
         return numRowsAffected == 1;
     }
 
+    public Recipe getRecipe(int id){
+        String query = "SELECT * FROM recipe WHERE id = '"  + id + "'";
 
-    public ArrayList<Recipe> getAllRecipes() {
-        Log.i(TAG, "getAllRecipe: Getting all recipes");
+        SQLiteDatabase db = this.getReadableDatabase();
 
-        String query = "SELECT * FROM recipe";
+
+        Cursor resultSet = db.rawQuery(query, null);
+
+        if ( resultSet.getCount() == 0 || resultSet.getCount() > 1 ) {
+            db.close();
+            return null;
+        }
+
+        resultSet.moveToFirst();
+
+        Recipe recipe = new Recipe();
+
+
+        int idColumn = resultSet.getColumnIndex("id");
+        int titleColumn = resultSet.getColumnIndex("title");
+        int descriptionColumn = resultSet.getColumnIndex("description");
+        int ingredientColumn = resultSet.getColumnIndex("ingredients");
+        int usernameColumn = resultSet.getColumnIndex("username");
+        int isPrivateColumn = resultSet.getColumnIndex("is_private");
+        int typeColumn = resultSet.getColumnIndex("type");
+
+        recipe.set_id(resultSet.getInt(idColumn));
+        recipe.setDescription(resultSet.getString(descriptionColumn));
+        recipe.setTitle(resultSet.getString(titleColumn));
+        recipe.setIngredients(resultSet.getString(ingredientColumn));
+        recipe.setUsername(resultSet.getString(usernameColumn));
+        recipe.setType(resultSet.getString(typeColumn));
+        String _isPrivate = resultSet.getString(isPrivateColumn);
+        Boolean isPrivate = _isPrivate.equalsIgnoreCase("true");
+        recipe.setIsPrivate(isPrivate);
+
+        return recipe;
+    }
+
+    public ArrayList<Recipe> getRecipesByUsername(String username) {
+        Log.i(TAG, "getAllRecipe: Getting all recipes by username");
+
+        String query = "SELECT * FROM recipe WHERE username = '"  + username + "'";
 
         SQLiteDatabase myDB = this.getReadableDatabase();
 
@@ -433,7 +471,7 @@ public class Db extends SQLiteOpenHelper {
         Log.i(TAG, "getAllRecipes: Number of recipes " + resultSet.getCount());
 
         if ( resultSet.getCount() == 0 ) {
-            Log.i(TAG, "getAllRecipes: No users found");
+            Log.i(TAG, "getAllRecipes: No Recipe found");
             return new ArrayList<>(0);
         }
 
@@ -472,8 +510,284 @@ public class Db extends SQLiteOpenHelper {
     }
 
 
+    public ArrayList<Recipe> getAllRecipes() {
+        Log.i(TAG, "getAllRecipe: Getting all recipes");
+
+        String query = "SELECT * FROM recipe";
+
+        SQLiteDatabase myDB = this.getReadableDatabase();
+
+        Log.i(TAG, "getAllRecipes: Query - " + query);
+
+        Cursor resultSet = myDB.rawQuery(query, null);
 
 
 
+        Log.i(TAG, "getAllRecipes: Number of recipes " + resultSet.getCount());
+
+        if ( resultSet.getCount() == 0 ) {
+            Log.i(TAG, "getAllRecipes: No Recipe found");
+            return new ArrayList<>(0);
+        }
+
+        resultSet.moveToFirst();
+
+        ArrayList<Recipe> recipes = new ArrayList<>();
+
+        int idColumn = resultSet.getColumnIndex("id");
+        int titleColumn = resultSet.getColumnIndex("title");
+        int descriptionColumn = resultSet.getColumnIndex("description");
+        int ingredientColumn = resultSet.getColumnIndex("ingredients");
+        int usernameColumn = resultSet.getColumnIndex("username");
+        int isPrivateColumn = resultSet.getColumnIndex("is_private");
+        int typeColumn = resultSet.getColumnIndex("type");
+
+
+
+        for ( int i = 0; i < resultSet.getCount(); i++ ) {
+            Recipe r = new Recipe();
+
+            r.set_id(resultSet.getInt(idColumn));
+            r.setDescription(resultSet.getString(descriptionColumn));
+            r.setTitle(resultSet.getString(titleColumn));
+            r.setIngredients(resultSet.getString(ingredientColumn));
+            r.setUsername(resultSet.getString(usernameColumn));
+            r.setType(resultSet.getString(typeColumn));
+            String _isPrivate = resultSet.getString(isPrivateColumn);
+            Boolean isPrivate = _isPrivate.equalsIgnoreCase("true");
+            r.setIsPrivate(isPrivate);
+
+            recipes.add(r);
+            resultSet.moveToNext();
+        }
+
+        return recipes;
+    }
+
+
+    public boolean addMealPlan(MealPlan mealPlan){
+        try (SQLiteDatabase db = this.getWritableDatabase()) {
+            ContentValues values = new ContentValues();
+            values.put("meal_type", mealPlan.getMealType());
+            values.put("is_private", mealPlan.getIsPrivate() ? "true" : "false");
+            values.put("recipeId", mealPlan.getRecipe().get_id());
+            values.put("date", mealPlan.getDate().toString());
+            int rowId = (int) db.insert("meal_plan", null, values);
+            Log.i(TAG, "Meal Plan ADD!" + rowId);
+            return true;
+        } catch (SQLException err) {
+            Log.e(TAG, err.getMessage());
+            return false;
+        }
+    }
+
+    public boolean editMealPlan(MealPlan mealPlan) {
+        String isPrivate = (mealPlan.getIsPrivate() ? "true" : "false");
+
+        SQLiteDatabase myDB = this.getWritableDatabase();
+
+        ContentValues values = new ContentValues();
+        values.put("meal_type", mealPlan.getMealType());
+        values.put("is_private", isPrivate);
+        values.put("recipeId", mealPlan.getRecipe().get_id());
+        values.put("date", mealPlan.getDate().toString());
+
+        String _id = String.valueOf(mealPlan.get_id());
+        int numRowsAffected = myDB.update("meal_plan", values, "id = ?", new String[]{_id});
+
+        Log.i(TAG,"Edited MealPlan");
+
+        return numRowsAffected == 1;
+    }
+
+    public MealPlan getMealPlan(int id){
+        String query = "SELECT * FROM meal_plan WHERE id = '"  + id + "'";
+
+        SQLiteDatabase db = this.getReadableDatabase();
+
+
+        Cursor result = db.rawQuery(query, null);
+
+        if ( result.getCount() == 0 || result.getCount() > 1 ) {
+            db.close();
+            return null;
+        }
+
+        result.moveToFirst();
+
+        MealPlan mealPlan = new MealPlan();
+
+
+        int dateIndex = result.getColumnIndex("date");
+        String dateString = result.getString(dateIndex);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            mealPlan.setDate(LocalDate.parse(dateString));
+        }
+
+        int mealType = result.getColumnIndex("meal_type");
+        mealPlan.setMealType(result.getString(mealType));
+
+        int isPrivateIndex = result.getColumnIndex("is_private");
+        String isPrivateString = result.getString(isPrivateIndex);
+        mealPlan.setIsPrivate(isPrivateString.equalsIgnoreCase("true"));
+
+        int idIndex = result.getColumnIndex("id");
+        mealPlan.set_id(result.getInt(idIndex));
+
+        int recipeIndex = result.getColumnIndex("recipeId");
+        int recipeId = result.getInt(recipeIndex);
+        Recipe recipe = this.getRecipe(recipeId);
+
+        mealPlan.setRecipe(recipe);
+
+
+
+        db.close();
+        return mealPlan;
+    }
+
+    public MealPlan getMealPlanByDate(String date){
+        String query = "SELECT * FROM meal_plan WHERE date = '"  + date + "'";
+
+        SQLiteDatabase db = this.getReadableDatabase();
+
+
+        Cursor result = db.rawQuery(query, null);
+
+        if ( result.getCount() == 0 || result.getCount() > 1 ) {
+            db.close();
+            return null;
+        }
+
+        result.moveToFirst();
+
+        MealPlan mealPlan = new MealPlan();
+
+
+        int dateIndex = result.getColumnIndex("date");
+        String dateString = result.getString(dateIndex);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            mealPlan.setDate(LocalDate.parse(dateString));
+        }
+
+        int mealType = result.getColumnIndex("meal_type");
+        mealPlan.setMealType(result.getString(mealType));
+
+        int isPrivateIndex = result.getColumnIndex("is_private");
+        String isPrivateString = result.getString(isPrivateIndex);
+        mealPlan.setIsPrivate(isPrivateString.equalsIgnoreCase("true"));
+
+        int idIndex = result.getColumnIndex("id");
+        mealPlan.set_id(result.getInt(idIndex));
+
+        int recipeIndex = result.getColumnIndex("recipeId");
+        int recipeId = result.getInt(recipeIndex);
+        Recipe recipe = this.getRecipe(recipeId);
+
+        mealPlan.setRecipe(recipe);
+
+
+
+        db.close();
+        return mealPlan;
+    }
+
+    public ArrayList<MealPlan> getAllMealPlans() {
+        try{
+            String query = "SELECT * FROM meal_plan";
+
+            SQLiteDatabase myDB = this.getReadableDatabase();
+
+            Cursor resultSet = myDB.rawQuery(query, null);
+
+
+
+            Log.i(TAG, "Number of meal_plans " + resultSet.getCount());
+
+            if ( resultSet.getCount() == 0 ) {
+                Log.i(TAG, ": No Meal plan found");
+                return new ArrayList<>(0);
+            }
+
+            resultSet.moveToFirst();
+
+            ArrayList<MealPlan> mealPlans = new ArrayList<>();
+
+            int idColumn = resultSet.getColumnIndex("id");
+            int dateColumn = resultSet.getColumnIndex("date");
+            int mealTypeColumn = resultSet.getColumnIndex("meal_type");
+            int recipeIdColumn = resultSet.getColumnIndex("recipeId");
+            int isPrivateColumn = resultSet.getColumnIndex("is_private");
+
+
+
+            for ( int i = 0; i < resultSet.getCount(); i++ ) {
+                MealPlan m = new MealPlan();
+
+                m.set_id(resultSet.getInt(idColumn));
+                m.setMealType(resultSet.getString(mealTypeColumn));
+                String dateString = resultSet.getString(dateColumn);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    m.setDate(LocalDate.parse(dateString));
+                }
+                int recipeId = resultSet.getInt(recipeIdColumn);
+                Recipe recipe = this.getRecipe(recipeId);
+                m.setRecipe(recipe);
+                String _isPrivate = resultSet.getString(isPrivateColumn);
+                boolean isPrivate = _isPrivate.equalsIgnoreCase("true");
+                m.setIsPrivate(isPrivate);
+
+                mealPlans.add(m);
+                resultSet.moveToNext();
+            }
+
+            return mealPlans;
+        }catch (Exception err){
+            Log.e(TAG, err.getMessage());
+            return null;
+        }
+
+
+    }
+
+    public ArrayList<MealPlan> getAllMealPlansForPeriod(ArrayList<LocalDate> periods) {
+        ArrayList<MealPlan> mealPlans = new ArrayList<>();
+
+        for (int i = 0; i < periods.size(); i++) {
+            MealPlan mealPlan = this.getMealPlanByDate(periods.get(i).toString());
+            if (mealPlan == null) continue;
+            mealPlans.add(mealPlan);
+        }
+
+        return mealPlans;
+    }
+
+    public boolean deleteMealPlan(int id) {
+
+        SQLiteDatabase myDB = this.getWritableDatabase();
+
+        String _id = String.valueOf(id);
+        int numRowsAffected = myDB.delete("meal_plan", "id = ?", new String[]{_id});
+
+        Log.i(TAG,"Deleted Meal Plan");
+
+        return numRowsAffected == 1;
+    }
+
+    public ArrayList<String> getShopping(){
+        ArrayList<MealPlan> mealPlans = this.getAllMealPlans();
+        ArrayList<String> shoppingListIngredient =  new ArrayList<>();
+
+        for (int i=0; i<mealPlans.size(); i++){
+            String ingredient = mealPlans.get(i).getRecipe().getIngredients();
+            String[]  ingredients = ingredient.split(",");
+            for (String s : ingredients) {
+                if (!shoppingListIngredient.contains(s)) {
+                    shoppingListIngredient.add(s);
+                }
+            }
+        }
+        return shoppingListIngredient;
+    }
 
 }

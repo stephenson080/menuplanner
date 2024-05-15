@@ -1,15 +1,13 @@
 package com.example.menuplanner.components.adapters;
 
 
-import android.content.Context;
-
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.lifecycle.Lifecycle;
 import androidx.viewpager2.adapter.FragmentStateAdapter;
 
-import com.example.menuplanner.AddRecipeFragment;
+import com.example.menuplanner.components.fragments.AddRecipeFragment;
 import com.example.menuplanner.components.fragments.RecipeListFragment;
 import com.example.menuplanner.entities.User;
 import com.example.menuplanner.utils.Db;

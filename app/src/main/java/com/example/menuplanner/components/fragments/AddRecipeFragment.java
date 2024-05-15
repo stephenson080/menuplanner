@@ -1,4 +1,4 @@
-package com.example.menuplanner;
+package com.example.menuplanner.components.fragments;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -20,6 +20,7 @@ import android.widget.Spinner;
 import android.widget.Switch;
 import android.widget.Toast;
 
+import com.example.menuplanner.R;
 import com.example.menuplanner.entities.Recipe;
 import com.example.menuplanner.entities.User;
 import com.example.menuplanner.utils.Db;
